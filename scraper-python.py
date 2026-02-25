@@ -1,4 +1,7 @@
 # To run this script, paste 'python scraper-python.py' in the terminal and press enter.
+import os
+os.environ["SSL_CERT_FILE"] = "/opt/homebrew/etc/ca-certificates/cert.pem"
+os.environ["REQUESTS_CA_BUNDLE"] = "/opt/homebrew/etc/ca-certificates/cert.pem"
 import requests
 from bs4 import BeautifulSoup
 

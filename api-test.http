@@ -1,0 +1,9 @@
+###
+
+GET http://localhost:3000/favicon.ico HTTP/1.1
+
+###
+GET http://localhost:3000/newurl HTTP/1.1
+
+###
+GET http://localhost:3000/newurl/Hayden HTTP/1.1
