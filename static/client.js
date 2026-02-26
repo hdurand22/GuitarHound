@@ -1,14 +1,13 @@
 /* global document */
 const sendReq = async () => {
-  const response = await fetch("/hello", {
-    method: "POST",
-    body: JSON.stringify({ name: "Hayden" }),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  document.getElementById("msg").textContent = response.statusText;
-  document.getElementById("body").textContent = await response.text();
+  const target = "https://www.example.com/";
+  const response = await fetch(`/api/scrape?url=${encodeURIComponent(target)}`);
+
+  document.getElementById("msg").textContent =
+    `${response.status} ${response.statusText}`;
+
+  const data = await response.json();
+  document.getElementById("body").textContent = JSON.stringify(data, null, 2);
 };
 
 document.addEventListener("DOMContentLoaded", function () {

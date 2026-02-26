@@ -15,8 +15,7 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "scrape": "NODE_EXTRA_CA_CERTS=/opt/homebrew/etc/ca-certificates/cert.pem node scraper-js.js",
-    "dev": "nodemon",
+    "dev": "cross-env NODE_EXTRA_CA_CERTS=/opt/homebrew/etc/ca-certificates/cert.pem nodemon --watch src --ext ts,json --exec \"ts-node\" src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint",
@@ -29,6 +28,7 @@
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",
+    "cross-env": "^10.1.0",
     "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jest": "^29.15.0",
