@@ -1,33 +1,47 @@
-import { createServer } from 'http';
-import express, { Request, Response } from 'express';
-import { newUrlHandler } from './handler';
+import express, { Request, Response } from "express";
+import morgan from "morgan";
+import cors from "cors";
+import { newUrlHandler } from "./handler";
 
-const expressApp = express();
-expressApp.use(express.json());
-const port = 3000;
+export const createServer = () => {
+  const app = express();
+  app
+    .disable("x-powered-by")
+    .use(morgan("dev"))
+    .use(express.urlencoded({ extended: true }))
+    .use(express.json())
+    .use(cors());
 
-// GET Routes
-expressApp.get("/newurl", newUrlHandler);
-expressApp.get("/newurl/:message", newUrlHandler);
-expressApp.get("/send-photo", (req: Request, res: Response) => {
+  // GET Routes
+  app.get("/health", (req: Request, res: Response) => {
+    res.json({ ok: true });
+  });
+  app.get("/newurl", newUrlHandler);
+  app.get("/newurl/:message", newUrlHandler);
+  app.get("/send-photo", (req: Request, res: Response) => {
     res.sendFile("Hayden.png", { root: "static" });
-});
-expressApp.get("/download-photo", (req: Request, res: Response) => {
+  });
+  app.get("/download-photo", (req: Request, res: Response) => {
     res.download("static/Hayden.png");
-});
+  });
 
-// POST Routes
-expressApp.post("/hello", (req: Request, res: Response) => {
+  // POST Routes
+  app.post("/hello", (req: Request, res: Response) => {
     const name = req.body.name;
     res.json({ greeting: `Hello, ${name}` });
-});
+  });
 
-// Static Serving
-expressApp.use(express.static("static"));
-expressApp.use(express.static("node_modules/bootstrap/dist"));
+  // Static Serving
+  app.use(express.static("static"));
+  app.use(express.static("node_modules/bootstrap/dist"));
 
-const server = createServer(expressApp);
+  return app;
+};
 
-server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
+// const port = 3000;
+
+// const server = createServer(app);
+
+// server.listen(port, () => {
+//   console.log(`Server listening on port ${port}`);
+// });

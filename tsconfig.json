@@ -1,8 +1,10 @@
 {
     "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
-        "rootDir": "src",
-        "outDir": "dist"
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "forceConsistentCasingInFileNames": true
     },
-    "include": ["src/**/*.ts"]
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist"]
 }
