@@ -17,7 +17,6 @@ export const newUrlHandler = (req: Request, res: Response) => {
 };
 
 export const scrapeHandler = async (req: Request, res: Response) => {
-  console.log("SCRAPE HANDLER FILE:", __filename);
   const urlParam = typeof req.query.url === "string" ? req.query.url : "";
   if (!urlParam) {
     res.status(400).json({ ok: false, error: "Missing 'url' query parameter" });
@@ -38,6 +37,17 @@ export const scrapeHandler = async (req: Request, res: Response) => {
 
     // Parse the HTML using Cheerio to extract the title, first paragraph, and first link
     const $ = load(html);
+    const products = $("[data-product-sku-id]")
+      .map((_, el) => {
+        const name = $(el).find("h2").first().text();
+        const url = $(el).find('a[href*=".gc"]').first().attr("href");
+        const price = $(el).find(".sale-price").first().text();
+
+        return { name, url, price };
+      })
+      .get();
+
+    console.log(products);
     const title = $("h1").first().text();
     const text = $("p").first().text();
     const link = $("a").first().attr("href") ?? null;
@@ -50,6 +60,7 @@ export const scrapeHandler = async (req: Request, res: Response) => {
       title,
       text,
       link,
+      products,
     });
   } catch (err: unknown) {
     const message =
@@ -63,8 +74,6 @@ export const scrapeHandler = async (req: Request, res: Response) => {
       err instanceof Error && "cause" in err
         ? (err as { cause?: unknown }).cause
         : undefined;
-
-    console.error("SCRAPE ERROR:", err);
 
     // If something already responded
     if (res.headersSent) return;
