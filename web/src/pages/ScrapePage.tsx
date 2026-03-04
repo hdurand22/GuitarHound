@@ -3,6 +3,7 @@ import { ScrapeButton } from "../components/ScrapeButton";
 import { ResultCard } from "../components/ResultCard";
 import type { Product } from "../types/product";
 import type { ScrapeResponse } from "../types/api";
+import { Loader } from "../components/Loader";
 
 export default function ScrapePage() {
   const target = useMemo(
@@ -46,7 +47,7 @@ export default function ScrapePage() {
 
     return (
       <>
-        <ScrapeButton loading={loading} onClick={runScrape} />
+        {loading? (<Loader />) : (<ScrapeButton loading={loading} onClick={runScrape} />)}
         {/* {msg && <div id="msg" style={{ marginBottom: 12 }}>{msg}</div>} */}
         {error && (<div>{error}</div>)}
         <div>

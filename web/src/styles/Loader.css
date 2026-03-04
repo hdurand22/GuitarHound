@@ -1,0 +1,47 @@
+.loader {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.loader-wipeFrame {
+  width: 15vw;
+  height: 15vh;
+  overflow: hidden;
+}
+
+/* this is the actual wipe: width animates, overflow hides the rest */
+.loader-wipe {
+  width: 0%;
+  height: 100%;
+  overflow: hidden;
+  animation: loaderWipe 900ms ease-in-out infinite;
+}
+
+.loader-image {
+  width: 15vw;
+  height: 15vh;
+  object-fit: cover;
+  display: block;
+}
+
+.loader-label {
+  width: 100%;
+  font-size: 14px;
+  opacity: 0.8;
+  text-align: center;
+}
+
+@keyframes loaderWipe {
+  0%   { width: 0%; }
+  60%  { width: 100%; }
+  100% { width: 100%; }
+}
+
+/* If you want it to reset each cycle instead of staying full, use:
+@keyframes loaderWipe {
+  0%   { width: 0%; }
+  50%  { width: 100%; }
+  100% { width: 0%; }
+}
+*/
