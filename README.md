@@ -13,3 +13,11 @@ server/ contains all backend files
 web/ contains all frontend files
  - Vite application (React w/ TypeScript)
  - src/ contains all frontend view files
+   - Components:
+     - ResultCard
+     - ScrapeButton
+   - Pages:
+     - ScrapePage
+   - types:
+     - product.ts (standardizes scrape result into a Product (image, URL, name, price))
+     - api.ts (enforces results as array of Products)

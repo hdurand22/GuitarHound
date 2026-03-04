@@ -17,6 +17,17 @@ export const newUrlHandler = (req: Request, res: Response) => {
 };
 
 export const scrapeHandler = async (req: Request, res: Response) => {
+  const GC_BASE = "https://www.guitarcenter.com";
+
+  function normalizeURL(href: string) {
+    // Already normalized URL
+    if (/^https?:\/\//i.test(href)) return href;
+    // Handle relative URLs starting with "/"
+    if (href.startsWith("/")) return `${GC_BASE}${href}`;
+    // Handle relative URLs without leading "/"
+    return `${GC_BASE}/${href}`;
+  }
+
   const urlParam = typeof req.query.url === "string" ? req.query.url : "";
   if (!urlParam) {
     res.status(400).json({ ok: false, error: "Missing 'url' query parameter" });
@@ -40,7 +51,9 @@ export const scrapeHandler = async (req: Request, res: Response) => {
     const products = $("[data-product-sku-id]")
       .map((_, el) => {
         const name = $(el).find("h2").first().text();
-        const url = $(el).find('a[href*=".gc"]').first().attr("href");
+        const url = normalizeURL(
+          $(el).find('a[href*=".gc"]').first().attr("href") ?? "",
+        );
         const price = $(el).find(".sale-price").first().text();
         const image = $(el).find("img").first().attr("src");
 
@@ -61,7 +74,7 @@ export const scrapeHandler = async (req: Request, res: Response) => {
       title,
       text,
       link,
-      products,
+      products: products.slice(0, 5), // Return only the first 5 products
     });
   } catch (err: unknown) {
     const message =
