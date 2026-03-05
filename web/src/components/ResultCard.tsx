@@ -1,4 +1,5 @@
 import type { Product } from "../types/product";
+import styles from "../styles/ResultCard.module.css";
 
 type ResultCardProps = {
   product: Product;
@@ -11,7 +12,7 @@ export function ResultCard({ product }: ResultCardProps) {
         <img src={product.image} alt={product.name} />
       </figure>
       <div className="card-body">
-        <h2 className="card-title">{product.name}</h2>
+        <h2 className={styles.cardTitle}>{product.name}</h2>
         <p>{product.price}</p>
         <div className="card-actions justify-end">
           <a href={product.url} target="_blank" rel="noopener noreferrer">

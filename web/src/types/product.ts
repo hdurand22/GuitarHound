@@ -1,7 +1,10 @@
+import type { Source } from "./api";
+
 export type Product = {
-  image: string;
+  source: Source;
   name: string;
   price: string;
   url: string;
+  image: string;
   skuId?: string;
 };

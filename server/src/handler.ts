@@ -1,5 +1,8 @@
 import type { Request, Response } from "express";
+import { scrapeGuitarCenter } from "./scrape/guitarcenter";
 import { load } from "cheerio";
+
+const SOURCES = [{ source: "guitarcenter" as const, run: scrapeGuitarCenter }];
 
 export const notFoundHandler = (req: Request, res: Response) => {
   res.sendStatus(404);
@@ -17,94 +20,27 @@ export const newUrlHandler = (req: Request, res: Response) => {
 };
 
 export const scrapeHandler = async (req: Request, res: Response) => {
-  const GC_BASE = "https://www.guitarcenter.com";
-
-  function normalizeURL(href: string) {
-    // Already normalized URL
-    if (/^https?:\/\//i.test(href)) return href;
-    // Handle relative URLs starting with "/"
-    if (href.startsWith("/")) return `${GC_BASE}${href}`;
-    // Handle relative URLs without leading "/"
-    return `${GC_BASE}/${href}`;
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (!q) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Missing 'q' query parameter" });
   }
 
-  const urlParam = typeof req.query.url === "string" ? req.query.url : "";
-  if (!urlParam) {
-    res.status(400).json({ ok: false, error: "Missing 'url' query parameter" });
-    return;
-  }
+  const settled = await Promise.allSettled(
+    SOURCES.map(async (source) => {
+      const products = await source.run(q);
+      return { source: source.source, products };
+    }),
+  );
 
-  let target: URL;
-  try {
-    target = new URL(urlParam);
-  } catch {
-    res.status(400).json({ ok: false, error: "Invalid URL" });
-    return;
-  }
+  const results = settled.map((result, index) => {
+    const source = SOURCES[index].source;
+    if (result.status === "fulfilled") return result.value;
+    return { source, products: [], error: String(result.reason) };
+  });
 
-  try {
-    const response = await fetch(target.toString()); // Go to URL and get the HTML content
-    const html = await response.text(); // Convert the response to text (HTML)
-
-    // Parse the HTML using Cheerio to extract the title, first paragraph, and first link
-    const $ = load(html);
-    const products = $("[data-product-sku-id]")
-      .map((_, el) => {
-        const name = $(el).find("h2").first().text();
-        const url = normalizeURL(
-          $(el).find('a[href*=".gc"]').first().attr("href") ?? "",
-        );
-        const price = $(el).find(".sale-price").first().text();
-        const image = $(el).find("img").first().attr("src");
-
-        return { name, url, price, image };
-      })
-      .get();
-
-    // console.log(products);
-    const title = $("h1").first().text();
-    const text = $("p").first().text();
-    const link = $("a").first().attr("href") ?? null;
-
-    // Create a JSON response with the extracted data and send it back to the client
-    res.status(200).json({
-      ok: true,
-      status: response.status,
-      url: target.toString(),
-      title,
-      text,
-      link,
-      products: products.slice(0, 5), // Return only the first 5 products
-    });
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
-
-    const cause =
-      err instanceof Error && "cause" in err
-        ? (err as { cause?: unknown }).cause
-        : undefined;
-
-    // If something already responded
-    if (res.headersSent) return;
-
-    return res.status(500).json({
-      ok: false,
-      error: message,
-      cause:
-        cause instanceof Error
-          ? cause.message
-          : typeof cause === "string"
-            ? cause
-            : cause
-              ? JSON.stringify(cause)
-              : undefined,
-    });
-  }
+  return res.status(200).json({ ok: true, query: q, results });
 };
 
 export const defaultHandler = async (req: Request, res: Response) => {
