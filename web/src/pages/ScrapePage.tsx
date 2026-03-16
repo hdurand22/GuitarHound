@@ -39,9 +39,8 @@ export default function ScrapePage() {
 
     return (
       <>
-        {loading? (<Loader />) : (<ScrapeButton loading={loading} onClick={runScrape} />)}
-        {/* {msg && <div id="msg" style={{ marginBottom: 12 }}>{msg}</div>} */}
-        {error && (<div>{error}</div>)}
+      {loading? (<Loader />) : (<ScrapeButton loading={loading} onClick={runScrape} />)}
+      {error && (<div>{error}</div>)}
       {products.map((group) => (
         <div key={group.source} style={{ marginTop: 16 }}>
           <h3 style={{ marginBottom: 8 }}>{group.source}</h3>
