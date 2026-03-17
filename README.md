@@ -21,3 +21,7 @@ web/ contains all frontend files
    - types:
      - product.ts (standardizes scrape result into a Product (image, URL, name, price))
      - api.ts (enforces results as array of Products)
+
+# LIBRARIES AND PACKAGES
+ - Playwright: for running the scrapers and extracting DOM information
+ - Bootstrap: for styling
