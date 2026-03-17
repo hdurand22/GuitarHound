@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import { scrapeGuitarCenter } from "./scrape/guitarcenter";
-import { scrapeSweetwater } from "./scrape/sweetwater";
+// import { scrapeSweetwater } from "./scrape/sweetwater";
 
 const SOURCES = [
   { source: "guitarcenter" as const, run: scrapeGuitarCenter },
-  { source: "sweetwater" as const, run: scrapeSweetwater},
+  // { source: "sweetwater" as const, run: scrapeSweetwater},
 ];
 
 export const notFoundHandler = (req: Request, res: Response) => {

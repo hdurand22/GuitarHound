@@ -1,5 +1,5 @@
 import type { Product } from "./shared";
-import { fetchHtml, makeNormalizer } from "./shared";
+import { createBrowserSession, makeNormalizer } from "./shared";
 
 const SW_BASE = "https://www.sweetwater.com/";
 const normalizeSW = makeNormalizer(SW_BASE);
@@ -7,57 +7,93 @@ const normalizeSW = makeNormalizer(SW_BASE);
 function buildSWUrl(query: string) {
   const url = new URL("/store/search", SW_BASE);
   url.searchParams.set("s", query.trim());
-  url.searchParams.set("sb", "low2high"); // Sort by price low to high
+  url.searchParams.set("sb", "low2high");
   return url.toString();
 }
 
 export async function scrapeSweetwater(query: string): Promise<Product[]> {
-  const url = buildSWUrl(query);
+  const { page, close } = await createBrowserSession();
 
-  const { $, res, html } = await fetchHtml(url);
-  console.log("has product_grid_item:", html.includes('data-testid="product_grid_item"'));
-  console.log("has product_link:", html.includes('data-testid="product_link"'));
-  console.log("has /store/detail/:", html.includes('/store/detail/'));
-  console.log("has pricing class:", html.includes('product_grid__pricing'));
-  if (!res.ok) throw new Error(`Sweetwater HTTP ${res.status}`);
+  try {
+    const url = buildSWUrl(query);
+    console.log("[server] [api] Sweetwater URL:", url);
 
-  const cards = $('[data-testid="product_grid_item"]');
-  console.log("Sweetwater status: ", res.status);
-  console.log("Sweetwater URL: ", url);
-  console.log("Sweetwater HTML length: ", html.length);
-  console.log("Sweetwater card count: ", cards.length);
-  console.log("Sweetwater title preview: ", $("title").text().trim());
-  console.log("Sweetwater body preview: ", $("body").text().slice(0, 500));
+    await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
 
-  const products = $('[data-testid="product_grid_item"]')
-    .slice(0, 5) // Limit to first 5 products to reduce noise
-    .map((_, el) => {
-      const skuId = $(el)
-        .attr("data-itemid") ?? undefined;
-      const name = $(el).find("h2").first().text().trim();
-      const href = $(el).find("a").first().attr("href") ?? "";
-      const url = normalizeSW(href);
-      const price = $(el).text().match(/\$[\d,]+(?:\.\d{2})?/)?.[0] ?? "";
-      const image = $(el)
-        .find('a[data-testid="product_image"] img')
-        .toArray()
-        .map((img) => $(img).attr("src") ?? "")
-        .reverse()
-        .find((src) => /^https?:\/\//i.test(src)) ?? "";
-      const img = normalizeSW(image);
+    await page.waitForTimeout(3000);
 
-      return {
-        source: "sweetwater" as const,
-        skuId,
-        name,
-        price,
-        url: url,
-        image: img,
-      };
-    })
-    .get()
+    console.log("[server] [api] Sweetwater title: ", await page.title());
+    console.log("[server] [api] Sweetwater body preview: ", (await page.locator("body").innerText()).slice(0, 500));
 
-    console.log("Sweetwater raw products:", products);
+    await page.waitForSelector('[data-testid="product_grid_item"], [data-itemid]', {
+      state: "attached",
+      timeout: 30000,
+    });
 
-  return products.filter((p) => p.name && p.url && p.price);
+    const products = await page.$$eval(
+      '[data-testid="product_grid_item"]',
+      (cards) =>
+        cards.slice(0, 10).map((card) => {
+          const skuId = card.getAttribute("data-itemid") ?? undefined;
+
+          const productLink =
+            card.querySelector('a[data-testid="product_link"]') ??
+            card.querySelector('a[data-testid="product_image"]');
+
+          const href = productLink?.getAttribute("href") ?? "";
+
+          const name =
+            card
+              .querySelector('a[data-testid="product_link"] h2')
+              ?.textContent?.trim() ??
+            productLink?.getAttribute("data-title")?.trim() ??
+            "";
+
+          const price =
+            card
+              .querySelector('a[class*="product_grid__pricing"]')
+              ?.textContent?.replace(/\s+/g, "")
+              .trim() ?? "";
+
+          const imageCandidates = Array.from(
+            card.querySelectorAll<HTMLImageElement>('a[data-testid="product_image"] img')
+          )
+            .map((img) => img.getAttribute("src") ?? "")
+            .reverse();
+
+          const image =
+            imageCandidates.find((src) => /^https?:\/\//i.test(src)) ?? "";
+
+          return {
+            source: "sweetwater" as const,
+            skuId,
+            name,
+            price,
+            href,
+            image,
+          };
+        })
+    );
+
+    const normalized: Product[] = products
+      .map((p): Product => ({
+        source: "sweetwater",
+        skuId: p.skuId,
+        name: p.name,
+        price: p.price,
+        url: normalizeSW(p.href),
+        image: p.image,
+      }))
+      .filter((p) => p.name && p.price && p.url);
+
+    console.log("[server] [api] Sweetwater product count:", normalized.length);
+    console.log("[server] [api] Sweetwater products:", normalized);
+
+    return normalized;
+  } finally {
+    await close();
+  }
 }
